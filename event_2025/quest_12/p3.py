@@ -16,7 +16,7 @@ def depth_search(start_node, v_nodes):
         if adjacent in temp_cache:
             v_nodes |= temp_cache[adjacent]
         else:
-            v_nodes |= depth_search(adjacent, v_nodes.copy())
+            v_nodes |= depth_search(adjacent, v_nodes)
     return v_nodes
 
 
