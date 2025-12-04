@@ -2,15 +2,14 @@ from collections import defaultdict
 
 
 def ranges_intersect(t1, t2):
-    #return min(t2[0]) <= min(t1[0]) <= max(t2[0]) and min(t2[1]) <= min(t1[1]) <= max(t2[1])
 
     (x1_min, y1_min), (x1_max, y1_max) = t1
     (x2_min, y2_min), (x2_max, y2_max) = t2
 
-    x1_min, x1_max = min(x1_min, x1_max), max(x1_min, x1_max)
-    y1_min, y1_max = min(y1_min, y1_max), max(y1_min, y1_max)
-    x2_min, x2_max = min(x2_min, x2_max), max(x2_min, x2_max)
-    y2_min, y2_max = min(y2_min, y2_max), max(y2_min, y2_max)
+    x1_min, x1_max = (x1_min, x1_max) if x1_min <= x1_max else (x1_max, x1_min)
+    y1_min, y1_max = (y1_min, y1_max) if y1_min <= y1_max else (y1_max, y1_min)
+    x2_min, x2_max = (x2_min, x2_max) if x2_min <= x2_max else (x2_max, x2_min)
+    y2_min, y2_max = (y2_min, y2_max) if y2_min <= y2_max else (y2_max, y2_min)
 
     x_overlap = x1_min <= x2_max and x2_min <= x1_max
     y_overlap = y1_min <= y2_max and y2_min <= y1_max
@@ -101,11 +100,8 @@ for step in inp:
             curr_pos = (0,1)
         else:
             curr_pos = (0,-1)
-
-    grid_rows.add(n_pos[0] + 1)
-    grid_rows.add(n_pos[0] - 1)
-    grid_cols.add(n_pos[1] + 1)
-    grid_cols.add(n_pos[1] - 1)
+    grid_rows.add(n_pos[0])
+    grid_cols.add(n_pos[1])
     walls.append((curr_pos, n_pos))
     curr_pos = n_pos
     curr_heading = next_heading
@@ -114,22 +110,48 @@ curr_pos = move(curr_heading, 1, curr_pos)
 
 E = (curr_pos[0], curr_pos[1])
 
-grid_rows.add(0)
-grid_cols.add(0)
-grid_rows.add(E[0])
-grid_cols.add(E[1])
-
 grid_nodes = set()
 for v1 in grid_rows:
     for v2 in grid_cols:
-        grid_nodes.add((v1,v2))
+        intersection = False
+        for wall_start, wall_end in walls:
+            wall_pair = (wall_start, wall_end)
+            if ranges_intersect(((v1,v2), (v1,v2)), wall_pair):
+                intersection = True
+                break
+        if intersection:
+            candidates = [(v1+1, v2+1), (v1+1, v2-1), (v1-1, v2+1), (v1-1, v2-1)]
+            for c in candidates:
+                intersection = False
+                for wall_start, wall_end in walls:
+                    wall_pair = (wall_start, wall_end)
+                    if ranges_intersect((c, c), wall_pair):
+                        intersection = True
+                        break
+                if not intersection:
+                    grid_nodes.add(c)
+        else:
+            grid_nodes.add((v1, v2))
 
+grid_nodes.add((S[0], S[1]))
+grid_nodes.add((S[0]+1, S[1]))
+grid_nodes.add((S[0]-1, S[1]))
+grid_nodes.add((S[0], S[1]+1))
+grid_nodes.add((S[0], S[1]-1))
+
+
+grid_nodes.add((E[0]+1, E[1]))
+grid_nodes.add((E[0]-1, E[1]))
+grid_nodes.add((E[0], E[1]+1))
+grid_nodes.add((E[0], E[1]-1))
+grid_nodes.add((E[0], E[1]))
 neighbours = defaultdict(set)
 
 checked = set()
 cnt = 0
 for from_nodes in grid_nodes:
-    print(f'{cnt} of {len(grid_nodes)}')
+    if cnt % 1000 == 0:
+        print(f'{cnt} of {len(grid_nodes)}')
     cnt += 1
     for to_nodes in grid_nodes:
         if from_nodes == to_nodes or tuple({from_nodes, to_nodes}) in checked:
